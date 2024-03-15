@@ -1,7 +1,876 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Homework 3 index.html here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      background-color: white;
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+      text-align: center;
+    }
+
+    kbd {
+      color: #121212;
+    }
+  </style>
+  <title>CS 184 Path Tracer</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+  <h1 align="middle">Project 3-1: Path Tracer</h1>
+  <h2 align="middle">Nothern, Jaxon Zeng</h2>
+
+  <!-- Add Website URL -->
+  <h2 align="middle">Website URL: <a href="https://cal-cs184-student.github.io/hw-webpages-sp24-JaxonZeng/">
+      https://cal-cs184-student.github.io/hw-webpages-sp24-JaxonZeng/
+    </a>
+  </h2>
+  <h2>
+    <a
+      href="https://cal-cs184-student.github.io/hw-webpages-sp24-NothernSJTU/">https://cal-cs184-student.github.io/hw-webpages-sp24-NothernSJTU/</a>
+  </h2>
+  <br><br>
+
+
+  <div align="center">
+    <table>
+      <tr>
+        <td align="middle">
+          <img src="imag/part0.png" width="480px" />
+          <figcaption align="middle">Results Caption: my bunny is the bounciest bunny</figcaption>
+      </tr>
+    </table>
+  </div>
+
+  <div>
+
+    <h2 align="middle">Overview</h2>
+    <p>
+      In this challenging project, we collaborated to gradually achieve global illumination. We wrote a ray tracer
+      capable of rendering semi-realistic scenes. We first worked on the basic rendering pipelining that generates rays for our pathtracer and defined intersection behaviors for primitives.
+      After that, we applied the BVH acceleration.
+      We also implemented hemisphere sampling and light importance sampling,
+      and then further completed the code for indirect illumination. The combination of direct and indirect lighting
+      completed the global illumination. Finally, we implemented adaptive sampling to further accelerate the rendering time.
+    </p>
+    <br>
+
+    <h2 align="middle">
+      Part 1: Ray Generation and Scene Intersection (20 Points)
+    </h2>
+    <!-- Walk through the ray generation and primitive intersection parts of the rendering pipeline.
+Explain the triangle intersection algorithm you implemented in your own words.
+Show images with normal shading for a few small .dae files. -->
+
+    <h3>
+      Rendering Pipeline
+    </h3>
+    <p>
+      I first implement the `generate_ray` function. This function takes in a pixel position in the image space and
+      needs to output a ray from the camera pointing to the input pixel in the world space. My implementation first
+      converted the pixel position from the image space to the camera space. Then I created a ray direction vector in
+      the camera space. The next step was to convert the ray direction vector in the camera space into the world space.
+      This conversion was implemented by the transform matrix of the camera. After that, I normalized the ray direction
+      vector and created the ray that points from the camera position to the direction of the direction vector. I also
+      applied the min t and max t to the ray.
+    </p>
+    <p>
+      The second function implemented is the `raytrace_pixel`. This function also takes in a pixel position in the image
+      space but is unnormalized. It then takes the given number of samples of this pixel and stores them in the sample
+      buffer. I used a loop to keep track of the number of samples. For each loop, I used a `gridSampler` to get a
+      random sample inside the given pixel and then normalized the coordinate for `generate_ray` to generate a ray. The
+      ray was then passed into `est_radiance_global_illumination` to get the illumination information. This information
+      was accumulated to the radiance variable. After the loop ended, the radiance was updated to the sampleBuffer.
+    </p>
+    <br>
+
+    <h3>
+      Intersection Algorithm
+    </h3>
+    <p>
+      The next part is the triangle and sphere intersection function. For the triangle intersection, I used the Moller
+      Trumbore algorithm taught in class, which was solving the intersection function using the ray function and the
+      Barycentric coordinates of the triangle. There was an intersection if the solution of the equation happened
+      between the min t and max t and the Barycentric coordinates were valid (between 0 and 1). If there was an
+      intersection, I then updated the intersection object with the intersect t and also interpreted the normal vector
+      by multiplying the Barycentric coordinates and the normal vectors of the three vertices.
+    </p>
+    <p>
+      I also used the sphere intersection algorithm taught in class for the sphere intersection function. The algorithm
+      solved the intersection points by building an equation between the sphere and the ray. If the equation was valid
+      e.g. no negative number under the square root, then there were intersection points. In this case, if one of the
+      intersection t was between min t and max t, then there was an intersection. Then I updated the intersection with
+      the closest intersection t. The normal vector was updated by the normalized vector pointing from the center of the
+      sphere to the intersection point.
+    </p>
+    <br>
+    <h3>
+      Images with normal shading for a few small .dae files
+    </h3>
+
+    <style>
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .grid-item {
+        width: 100%;
+        height: auto;
+      }
+    </style>
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/task1/CBempty.png" align="middle" width="400px" />
+        <figcaption>CBempty.dae</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task1/CBspheres.png" align="middle" width="400px" />
+        <figcaption>CBspheres.dae</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task1/CBgems.png" align="middle" width="400px" />
+        <figcaption>CBgems.dae</figcaption>
+      </div>
+      <div class="grid-item">
+        <!-- <img src="imag/part3-0-4.png" alt=""> -->
+      </div>
+    </div>
+
+    <br>
+
+
+    <h2 align="middle">Part 2: Bounding Volume Hierarchy (20 Points)</h2>
+    <!-- Walk through your BVH construction algorithm. Explain the heuristic you chose for picking the splitting point.
+Show images with normal shading for a few large .dae files that you can only render with BVH acceleration.
+Compare rendering times on a few scenes with moderately complex geometries with and without BVH acceleration. Present your results in a one-paragraph analysis. -->
+
+    <h3>
+      BVH construction algorithm
+    </h3>
+    <p>
+      This part implemented the BVH tree (Bounding Volume Hierarchy tree) for acceleration. The construction of the BVH
+      tree first checks if the current number of elements (primitives) is less than the max leaf size allowed. If yes,
+      it will simply return a leaf node with all the input elements. If the current number of elements is too large, the
+      algorithm will split the primitives and recursively call the construction function to build a new node. The
+      splitting algorithm first takes the average of the centroids of the bounding boxes of all primitives. Then it
+      splits all the primitives along the x-axis of the average position. After all, the algorithm reorders all the
+      primitives after splitting since the BVH tree needs to maintain a connected relationship. Moreover, if all the
+      primitives are split to one side of the tree, the splitting point will simply be the medium element of the
+      iterator. I choosed the average position as the splitting point because it can keep the spatial balance of the primitives
+      unless all primitives have the same x-axis, and potentially count balance. Moreover, calculating the average position is easy and can provide a faster 
+      BVH construction time. The BVH tree can also be more balanced like a balance tree and thus accelerate the rendering time from $O(n)$ to $O(log (n))$.
+    </p>
+
+    <h3>
+      Images with normal shading for a few large .dae files that can only be rendered with BVH acceleration.
+    </h3>
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/task2/beast.png" align="middle" width="400px" />
+        <figcaption>beast.dae, 64618 primitives</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task2/cow.png" align="middle" width="400px" />
+        <figcaption>cow.dae, 5856 primitives</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task2/maxplanck.png" align="middle" width="400px" />
+        <figcaption>maxplanck.dae, 50801 primitives</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task2/peter.png" align="middle" width="400px" />
+        <figcaption>peter.dae, 40018 primitives</figcaption>
+      </div>
+
+    </div>
+    <br>
+
+
+
+    <h3>
+      Compare rendering times on a few scenes with moderately complex geometries with and without BVH acceleration.
+    </h3>
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/task2/CBgems.png" align="middle" width="400px" />
+        <figcaption>CBgems.dae, 252 primitives, 200.0763s without BVH, 7.6191s with BVH on local machine</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task2/teapot.png" align="middle" width="400px" />
+        <figcaption>cow.dae, 2464 primitives, 361.4376s without BVH, 6.8632 with BVH on local machine</figcaption>
+      </div>
+
+      <div class="grid-item">
+        <!-- <img src="imag/part3-0-4.png" alt=""> -->
+      </div>
+    </div>
+
+
+    <p>
+      I used the gems scene and the teapot model to compare the rendering time with and without BVH acceleration. For
+      both scenes, if rendered without BVH acceleration, the rendering took a few minutes to complete. However, with the
+      BVH acceleration, the rendering time is shortened to a few seconds. The acceleration in rendering time is huge.
+      Moreover, the BVH acceleration reduces the complexity of the test. For the gems scene, the average intersection
+      per ray was reduced from 252 to 1.605. The teapot scene reduced from 433.22 to 11.52. The theoretical complexity
+      reduces from $O(n)$ to $O(log (n))$.
+    </p>
+    <br>
+
+    <h2 align="middle">Part 3: Direct Illumination (20 Points)</h2>
+    <!-- Walk through both implementations of the direct lighting function.
+Show some images rendered with both implementations of the direct lighting function.
+Focus on one particular scene with at least one area light and compare the noise levels in soft shadows when rendering with 1, 4, 16, and 64 light rays (the -l flag) and with 1 sample per pixel (the -s flag) using light sampling, not uniform hemisphere sampling.
+Compare the results between uniform hemisphere sampling and lighting sampling in a one-paragraph analysis. -->
+
+    <p>Task1</p>
+    <p>
+      This is simple because to obtain the diffuse reflectance, you can directly divide the reflectance given in the
+      problem statement by pi.
+    </p>
+    <p>
+      $$f_r(\omega_i \rightarrow \omega_r)=\frac{d L_r(\omega_r)}{d E_i(\omega_i)}=\frac{d
+      L_r(\omega_r)}{L_i(\omega_i)\cos \theta_i ~d \omega_i} \quad\left[\frac{1}{sr}\right]$$
+    </p>
+    <p>
+      What's puzzling is, I don't understand why sample_f is also shown to be a task of this part (obviously, it should
+      belong to part 4.1. Since I just started working on the project and am not familiar with the overall code, I spent
+      a long time thinking and still don't know how to write it without any hints.
+    </p>
+    <p>
+      Task2
+    </p>
+    <p>
+      Zero reflection illumination only requires the light from the light source itself, so it is directly equal to the
+      object's emitted light spectrum, making it very simple to implement.
+    </p>
+    <p>
+      Implementing uniform hemisphere sampling is a challenging part of this project.
+    </p>
+    <p>
+      $$\frac{1}{N} \sum_{j=1}^N \frac{f_r(\mathrm{p}, \omega_j \rightarrow \omega_r) L_i(\mathrm{p}, \omega_j)
+      \cos\theta_j}{p(\omega_j)}$$
+    </p>
+    <p>
+      This formula looks very abstract. After finding the pseudo-code in the slides, I seriously considered what
+      information I would need. Then I realized, in fact, all I need to do in each loop is to calculate the
+      corresponding three values separately and then multiply them. Therefore, the core of this part of the code is to
+      understand the intersection point variables and which one should be used as the sampling direction to apply the
+      formula.
+    </p>
+    <p>
+      After carefully reading the notes written by the teaching assistant, I found it not so difficult. Every step has
+      already been pointed out: calculate the cosine of the angle between vectors, project the ray, test for
+      intersections, and finally normalize (also presented in the pseudo-code on the slides). Of course, don't forget to
+      set the ray field to a small constant. The main function should also be updated.
+    </p>
+    <p>
+      However, surprisingly, the rendering result did not look good.
+    </p>
+
+    <img src="imag/debug3-3-1.png" alt="">
+
+    <p>
+      After carefully checking, I still could not find the problem. Looking at the edited version, I realized that the
+      problem might be due to not setting the same coordinate system when calculating the product with the normal
+      vector.
+    </p>
+    <p>
+      Now it looks good.
+    </p>
+    <p>
+      Task4
+    </p>
+    <p>
+      Our results from uniform hemisphere sampling are very noisy! Although they will converge to the correct result, we
+      can do better! I think so too.
+    </p>
+    <p>
+      The code for importance sampling looks really complex, with a lot of information, but I still patiently read
+      through the notes.
+    </p>
+    <p>
+      Previously, when dealing with the hemisphere function, I didn't think too much and directly calculated wi and
+      w_out, which caused me great confusion between the world coordinate system and the local coordinate system. I
+      realized my thinking wasn't deep enough before. This also made me understand why it's necessary to write code by
+      hand after class to truly master it.
+    </p>
+    <p>
+      I didn't understand which tests I should perform, or what values to substitute into the formulas. After repeatedly
+      reviewing the slides and discussions, I had no choice but to ask GPT. I learned that:
+    </p>
+
+    <ui>
+      <li>
+        In the world coordinate system: When directly using positions, directions, and normals from the scene for
+        calculations, you don't need to perform additional coordinate transformations. This is usually sufficient for
+        global illumination calculations and visual effects.
+      </li>
+      <li>
+        In the local coordinate system: When performing calculations specific to the surface of an object (such as
+        calculating BRDF), it may be necessary to transform relevant vectors (such as incident light wi and reflected
+        light wo) into the local coordinate system. The Z-axis of the local coordinate system is usually aligned with
+        the normal of the object's surface, which simplifies calculations because you can directly use the components of
+        the coordinates (for example, the Z component represents the angle with the normal) for calculations.
+      </li>
+    </ui>
+
+    <p>
+      World Coordinate System:
+    </p>
+
+    <ol>
+      <li>
+        Light source position: The positions of light sources are set relative to the entire scene, so they are usually
+        defined in the world coordinate system.
+      </li>
+      <li>
+        Camera position and orientation: The position and orientation of the camera are also usually defined relative to
+        the entire scene, so they are in the world coordinate system.
+      </li>
+      <li>
+        Object's global position: The position of objects, if relative to the origin of the scene, is usually defined in
+        the world coordinate system.
+      </li>
+      <li>
+        Normals at the intersection point (isect.n): If the calculation considers the object's global transformations
+        (such as rotation and displacement), then these normals are usually defined in the world coordinate system.
+      </li>
+    </ol>
+
+    <p>
+      Local (Intersection) Coordinate System:
+    </p>
+
+    <ol>
+      <li>
+        Points on the object's surface: If you are dealing with specific points on the object's surface (such as texture
+        mapping, normal mapping, etc.), the coordinates of these points may be defined in the object's local coordinate
+        system.
+      </li>
+      <li>
+        Vectors in tangent space: Used for specific shading calculations, such as normal mapping, these vectors are in
+        tangent space (a special type of local coordinate system).
+      </li>
+    </ol>
+
+    <p>
+      I gradually understood what those w20 at the beginning of the function were, which means I just need to perform
+      the intersection test in the same coordinate system and then apply the formula as usual. Here, I wrote parts to
+      handle area lights and point lights separately, filling in the framework with physical and ray intersection tests,
+      and checking for backside lighting. I had GPT check if it was in the same coordinate system to see if there were
+      any problems. The prompt also told me to subtract EPS_F to avoid self-intersection.
+    </p>
+
+    <h3>
+      Show some images rendered with both implementations of the direct lighting function.
+    </h3>
+
+    <style>
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .grid-item {
+        width: 100%;
+        height: auto;
+      }
+    </style>
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/part3-0-1.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-0-2.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-0-3.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-0-4.png" alt="">
+      </div>
+    </div>
+    <small>
+      The top left is lighting sampling 16pixel, while right is 64pixel
+    </small>
+    <small>
+      The down left is hemisphere sampling 1pixel , while right is 64pixel
+    </small>
+    <br>
+
+    <h3>
+      Focus on one particular scene with at least one area light and compare the noise levels in soft shadows when
+      rendering with 1, 4, 16, and 64 light rays (the -l flag) and with 1 sample per pixel (the -s flag) using light
+      sampling, not uniform hemisphere sampling.
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/part3-5-1.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-5-2.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-5-3.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-5-4.png" alt="">
+      </div>
+    </div>
+    <br>
+
+    <p>
+      Although they look similar, it can be observed that the number of noise points in the scene decreases as the
+      number of rendering rays increases. Due to the low sampling rate, when the number of rays is 1, visible noise dots
+      are present on both the walls and the rabbit, as well as in the rabbit's shadow. After increasing the number of
+      rays to 4, the amount of noise drops significantly, but the edges of the shadows still have many noise dots.
+      Continuing to increase to 16, the image becomes much cleaner, though there are still some faint noise dots.
+      Finally, when the number of rays is 64, the shadows are relatively clear, and the noise is not obvious.
+    </p>
+
+    <h3>
+      Compare the results between uniform hemisphere sampling and lighting sampling in a one-paragraph analysis.
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/part3-6-1.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part3-6-2.png" alt="">
+      </div>
+    </div>
+    <br>
+
+    <p>
+      Through comparison, it can be found that compared to uniform hemisphere sampling, importance sampling, which
+      prioritizes the contribution of light sources in the scene, yields better results: the scene is cleaner, with
+      significantly fewer noise dots. Light importance sampling produces smoother and more realistic soft shadow
+      effects. Uniform hemisphere sampling leads to more noise dots and inconsistencies at the edges of shadows.
+    </p>
+    <p>
+      For highlights and reflective surfaces, light importance sampling provides more accurate and sharper details
+      because it more effectively samples the important light rays in these areas. This makes the scene bright and
+      accurate.
+    </p>
+    <p>
+      In rendering, images using light importance sampling usually converge faster to a lower level of noise, but the
+      computational cost is higher than that of uniform hemisphere sampling.
+    </p>
+
+    <h2 align="middle">Part 4: Global Illumination (20 Points)</h2>
+    <!-- Walk through your implementation of the indirect lighting function.
+Show some images rendered with global (direct and indirect) illumination. Use 1024 samples per pixel.
+Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. Use 1024 samples per pixel. (You will have to edit PathTracer::at_least_one_bounce_radiance(...) in your code to generate these views.)
+For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.
+Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.
+You will probably want to use the instructional machines for the above renders in order to not burn up your own computer for hours. -->
+
+    <h3>
+      Walk through your implementation of the indirect lighting function.
+    </h3>
+
+    <p>
+      This task was truly torturous. It took me about 10 hours to complete it and the writing part. For reflections more
+      than once, in fact, you only need to understand a single reflection well to be able to complete it quickly. The
+      task provided many hints, first gradually decreasing the depth of the reflected light rays to meet the recursive
+      exit condition, calculating the value of the current light formula before each recursion, and then recursing the
+      reflected light rays, thus enabling the calculation of multiple reflections added together. The real trouble with
+      this task was that when I started, my teammate hadn't finished the second part, so I was almost unable to do the
+      indirect lighting rendering.
+    </p>
+    <p>
+      But the most troublesome part wasn't the function implementation, but the writing part. First, I found it
+      impossible to render 1024 pixels locally; even 64 pixels took me a long time to train. That's when I understood
+      why the homework hints suggested checking the correctness of the results with low pixels first. In the end, I had
+      to seek help from Hive. One problem with Hive is that sometimes when I was rendering on a server, someone else
+      might be using it too, resulting in CPU overflow and the images not being saved, which was a waste of time.
+    </p>
+    <p>
+      Russian Roulette was easier to implement, you just need to clarify that the input to the random function is the
+      termination probability, and divide the original result by the non-termination probability value. I set the
+      termination probability at 35%.
+    </p>
+    <p>
+      Next was the writing part, starting with outputting only the part with direct lighting, which is actually part 3,
+      and the part without lighting gave me many bugs. How to implement returning only the part of the light reflected
+      this time was another challenge. So, I went to two hw parties and gradually understood the key to the problem. It
+      is essential to understand the current light's depth and the relationship between the total depth of light and the
+      actual number of light reflections. Most importantly, remember not to accumulate light after judging the number of
+      reflections (note that this must be after determining the intersection); if the current light is not needed,
+      return to the initial value directly. This made me think more deeply about the meaning of the code.
+    </p>
+
+    <h3>
+      Show some images rendered with global (direct and indirect) illumination. Use 1024 samples per pixel.
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/part4-1-1.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/part4-1-2.png" alt="">
+      </div>
+    </div>
+    <br>
+
+    <h3>
+      Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination.
+      Use 1024 samples per pixel. (You will have to edit PathTracer::at_least_one_bounce_radiance(...) in your code to
+      generate these views.)
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/direct/direct.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/direct/indirect.png" alt="">
+      </div>
+      <div class="grid-item">
+        <p>Only direct illumination (example1.dae)</p>
+      </div>
+      <div class="grid-item">
+        <p>Only indirect illumination (example1.dae)</p>
+      </div>
+    </div>
+    <br>
+
+    <p>
+      You can see that the combination of the two adds up to a complete global illumination image. Direct lighting
+      includes light that comes directly from the light source as well as light that is directly reflected from objects
+      or walls, hence the light sources and walls are bright, but the side of the object that is away from the light
+      source is dark. Indirect lighting includes light that is reflected from all other objects, so the light sources
+      are dark, but the walls and objects are illuminated, and the colors are very soft, while the side facing the light
+      source is darker, which is exactly the opposite of direct lighting.
+    </p>
+    <p>
+      For CBbunny.dae, render the mth bounce of light with max_ray_depth set to 0, 1, 2, 3, 4, and 5 (the -m flag), and
+      isAccumBounces=false. Explain in your writeup what you see for the 2nd and 3rd bounce of light, and how it
+      contributes to the quality of the rendered image compared to rasterization. Use 1024 samples per pixel. && For
+      CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, 4, and 5(the -m flag). Use 1024 samples
+      per pixel.
+    </p>
+
+    <style>
+      table {
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: center;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+
+      table img {
+        width: 160px;
+      }
+    </style>
+
+    <table>
+      <tr>
+        <th>isAccumBounces</th>
+        <th>m=0</th>
+        <th>m=1</th>
+        <th>m=2</th>
+        <th>m=3</th>
+      </tr>
+      <tr>
+        <td></td>
+        <td>\(L_{e}\)</td>
+        <td>\(K(L_{e})\)</td>
+        <td>\((K\circ K)(L_{e})\)</td>
+        <td>\(K\circ K\circ K)(L_{e})\)</td>
+      </tr>
+      <tr>
+        <td>false</td>
+        <td><img src="imag/only/only0.png" alt=""></td>
+        <td><img src="imag/only/only1.png" alt=""></td>
+        <td><img src="imag/only/only2.png" alt=""></td>
+        <td><img src="imag/only/only3.png" alt=""></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>\(\sum_{i=0}^{0}K^{i}(L_{e})\)</td>
+        <td>\(\sum_{i=0}^{1}K^{i}(L_{e})\)</td>
+        <td>\(\sum_{i=0}^{2}K^{i}(L_{e})\)</td>
+        <td>\(\sum_{i=0}^{3}K^{i}(L_{e})\)</td>
+      </tr>
+      <tr>
+        <td>true</td>
+        <td><img src="imag/maxdepth/m0.png" alt=""></td>
+        <td><img src="imag/maxdepth/m1.png" alt=""></td>
+        <td><img src="imag/maxdepth/m2.png" alt=""></td>
+        <td><img src="imag/maxdepth/m3.png" alt=""></td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <th>m=4</th>
+        <th>m=5</th>
+      </tr>
+      <tr>
+        <td>\((K\circ K\circ K\circ K)(L_{e})\)</td>
+        <td>\((K\circ K\circ K\circ K\circ K)(L_{e})\)</td>
+      </tr>
+      <tr>
+        <td><img src="imag/only/only4.png" alt=""></td>
+        <td><img src="imag/only/only5.png" alt=""></td>
+      </tr>
+      <tr>
+        <td>\(\sum_{i=0}^{4}K^{i}(L_{e})\)</td>
+        <td>\(\sum_{i=0}^{5}K^{i}(L_{e})\)</td>
+      </tr>
+      <tr>
+        <td><img src="imag/maxdepth/m4.png" alt=""></td>
+        <td><img src="imag/maxdepth/m5.png" alt=""></td>
+      </tr>
+    </table>
+    <br>
+
+    <p>
+      We can see that when the depth is 0, only the light sources are displayed. When not accumulating reflected light,
+      the image becomes darker as the number of reflections increases. This is because when light reflects from one
+      surface to another, a part of the light energy is absorbed, leading to a decrease in the intensity of the
+      reflected light. Therefore, with more reflections, there is less light energy, and the rendered image becomes
+      darker.
+    </p>
+    <p>
+      In rendering images, the second bounce of light means that the light first hits a surface from the light source
+      and then bounces to another surface, providing additional light for objects in the scene. This adds richer shadow
+      details and color bleeding effects when rendering images, making the scene look softer and more realistic. The
+      third bounce further enhances the effect of indirect lighting, especially in darker areas or between complex
+      geometric shapes. These light bounces add detail to the image, better representing subtle changes in lighting,
+      delicate shadow transitions, and reflections of color.
+    </p>
+    <p>
+      Compared to rasterization techniques, path tracing requires longer computation times but provides better rendering
+      results for complex scenes and materials. The indirect reflection of light in global illumination can capture the
+      effect of an object's surface color affecting adjacent surfaces, enhancing the realism and richness of the scene.
+      Rasterization methods, on the other hand, struggle to directly simulate this type of indirect lighting effect.
+    </p>
+    <p>
+      When accumulating light depth, we can see that as the light depth increases, the rendering effect becomes more
+      realistic, the scene gets brighter, and more "shadowed areas" are illuminated, displaying richer details and
+      variations in light and shadow.
+    </p>
+
+    <h3>
+      For CBbunny.dae, output the Russian Roulette rendering with max_ray_depth set to 0, 1, 2, 3, 4, and 100(the -m
+      flag). Use 1024 samples per pixel.
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/russian/russian_0.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/russian/russian_1.png" alt="">
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 0 (CBbunny.dae)</p>
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 1 (CBbunny.dae)</p>
+      </div>
+
+      <div class="grid-item">
+        <img src="imag/russian/russian_2.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/russian/russian_3.png" alt="">
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 2 (CBbunny.dae)</p>
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 3 (CBbunny.dae)</p>
+      </div>
+
+      <div class="grid-item">
+        <img src="imag/russian/russian_4.png" alt="">
+      </div>
+      <div class="grid-item">
+        <img src="imag/russian/russian_100.png" alt="">
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 4 (CBbunny.dae)</p>
+      </div>
+      <div class="grid-item">
+        <p>max_ray_depth = 100 (CBbunny.dae)</p>
+      </div>
+    </div>
+    <br>
+
+    <p>
+      The results for depths of 0-4 are similar to the previous parts, with depth 0 being the light source, and as the
+      depth increases, the brightness of the scene increases, rendering it richer and more realistic. It can be noted
+      that there isn't a significant difference at a depth of 100 (of course, if you switch between images continuously,
+      you can see that compared to depth 4, the brightness and richness have increased). This is because a 35%
+      termination probability is set, so although the depth is 100, after many bounces, the probability of a
+      theoretically expected termination event is already high, making it difficult to exceed a certain number of
+      bounces (such as 15). Therefore, even with a set maximum depth of 100, no significant changes are displayed.。
+    </p>
+
+    <h3>
+      Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16,
+      64, and 1024. Use 4 light rays.
+    </h3>
+
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/sample/spheres_1.png" alt="">
+        <br>
+        <figcaption>1 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/sample/spheres_2.png" alt="">
+        <br>
+        <figcaption>2 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+
+      <div class="grid-item">
+        <img src="imag/sample/spheres_4.png" alt="">
+        <br>
+        <figcaption>4 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/sample/spheres_8.png" alt="">
+        <br>
+        <figcaption>8 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+
+      <div class="grid-item">
+        <img src="imag/sample/spheres_16.png" alt="">
+        <br>
+        <figcaption>16 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/sample/spheres_64.png" alt="">
+        <br>
+        <figcaption>64 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/sample/spheres_1024.png" alt="">
+        <br>
+        <figcaption>1024 samples per pixel(CBbunny.dae)</figcaption>
+      </div>
+    </div>
+    <br>
+
+    <p>
+      It is evident that as the number of pixel samples increases, the noise in the rendered scene gradually decreases,
+      making the image more realistic and colorful. The quality of the rendering becomes increasingly higher.
+    </p>
+
+    <h2 align="middle">Part 5: Adaptive Sampling (20 Points)</h2>
+    <!-- Explain adaptive sampling. Walk through your implementation of the adaptive sampling.
+Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which part of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth. -->
+
+    <h3>
+      Adaptive sampling algorithm
+    </h3>
+    <p>
+      This part implements adaptive sampling, which provides extra acceleration by applying different sample rates to
+      different pixels. The adaptive sampling algorithm is based on statistics to determine whether a sample is
+      converged
+      (having enough samples to avoid noise). It uses two variables to keep track of the accumulated illuminance and the
+      square of the illuminance. $s_1 = \Sigma_0^n{\text{illum}}, s_2 = \Sigma_0^n{\text{illum} ^2}$ With these two
+      variables, the algorithm calculates an indicator of convergence using the variance of all n samples $\sigma^2 =
+      \frac{1}{n-1}\cdot(s_2 - \frac{s_1^2}{n}), I = 1.96 \cdot\frac{\sigma}{\sqrt{n}}$. The threshold to predict
+      convergence will be calculated by the mean of all samples and the tolerance inputted by commands $\mu =
+      \frac{s_1}{n}, \text{thres} = maxTolerance \cdot \mu$. Once the indicator is not greater than the threshold, it
+      means the pixel converges, and it will stop sampling.
+    </p>
+    <br>
+
+    <h3>
+      Pick two scenes and render them with at least 2048 samples per pixel. Show a good sampling rate image with
+      clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate
+      image, which shows your how your adaptive sampling changes depending on which part of the image you are
+      rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.
+    </h3>
+    <!-- Example of including multiple figures -->
+    <div class="grid-container">
+      <div class="grid-item">
+        <img src="imag/task5/bunny2.png" align="middle" width="400px" />
+        <figcaption>CBbunny.dae, 2048 samples per pixel</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task5/bunny2_rate.png" align="middle" width="400px" />
+        <figcaption>Bunny sampling rate</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task5/spheres.png" align="middle" width="400px" />
+        <figcaption>CBspheres.dae</figcaption>
+      </div>
+      <div class="grid-item">
+        <img src="imag/task5/spheres_rate.png" align="middle" width="400px" />
+        <figcaption>Spheres sampling rate</figcaption>
+      </div>
+    </div>
+    <br>
+
+    <h2>Cooperation Experience</h2>
+    <p>Mian: </p>
+    <p>
+      For projects like this, where the implementation of later parts relies on the code from earlier sections, it has
+      taught me that starting homework earlier is essential. Managing the project and debugging code is very
+      challenging, and it becomes even more difficult to identify whose mistake it is when a bug is encountered.
+      Additionally, to prepare for exams, I also need to learn the parts completed by my teammates. I am grateful for my
+      teammates' contributions; completing this project was truly not easy.
+    </p>
+    <p>Jaxon: </p>
+    <p>
+      This is a hard, long project that requires a lot of logical management. Thus, cooperation is important but
+      difficult since we need to keep
+      updated and manage our overall rendering pipeline. Luckily, we communicated a lot and kept up to date, although
+      sometimes we still encountered some bugs.
+      But we still successfully completed this project, and I'm so grateful for my partner.
+    </p>
+
+
+</body>
+
 </html>
